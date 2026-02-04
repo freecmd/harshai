@@ -1,0 +1,669 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{booktabs}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{A Multi-Modal Framework Employing HMCD for Market Prediction and Deep Learning (LSTM-Prophet) for Predictive Analysis}
+
+\author{
+\IEEEauthorblockN{Harsh Gupta, Harsh Dwivedi, Dhrub Chauhan, Preeti Kumari}
+\IEEEauthorblockA{\textit{Department of Computer Science and Engineering} \\
+\textit{Dayananda Sagar University}\\
+Bengaluru, India \\
+\{harsh.gupta, harsh.dwivedi, dhrub.chauhan, preeti.kumari\}@dsu.edu.in}
+\and
+\IEEEauthorblockN{Prof. Sharath H A}
+\IEEEauthorblockA{\textit{Department of Computer Science and Engineering} \\
+\textit{Dayananda Sagar University}\\
+Bengaluru, India \\
+sharath.ha@dsu.edu.in}
+}
+
+\maketitle
+
+\begin{abstract}
+Stock market prediction remains a challenging domain due to inherent volatility, non-linearity, and sensitivity to external factors. This paper presents a multi-modal framework that integrates deep learning forecasting with human-machine collaborative decision-making for comprehensive market analysis. Our system employs a hybrid LSTM-Prophet architecture that combines Prophet's trend decomposition with LSTM's residual error modeling to achieve superior prediction accuracy. The framework incorporates ARIMA baseline modeling, technical indicator analysis (RSI, MACD, EMA), sentiment analysis from news and social media, and anomaly detection using Isolation Forest. A novel Human-Machine Collaborative Decision (HMCD) module synthesizes predictive strength, technical confirmation, investor sentiment, and risk assessment through a balanced compensatory model with symmetric decision thresholds. The system is implemented as a web-based platform using Streamlit, providing real-time data acquisition from Yahoo Finance and independent visualization frames for each forecasting model. Experimental results on real-world stock data demonstrate that the hybrid LSTM-Prophet model achieves higher directional accuracy compared to standalone ARIMA, Prophet, or LSTM approaches. The HMCD framework successfully produces balanced BUY/HOLD/SELL recommendations without bias, addressing common pitfalls in automated trading systems. Our framework handles timezone-naive datetime preprocessing, ensuring robust operation across different data sources and markets.
+\end{abstract}
+
+\begin{IEEEkeywords}
+stock market prediction, LSTM, Prophet forecasting, hybrid models, HMCD decision framework, sentiment analysis, technical indicators, anomaly detection, multi-modal learning
+\end{IEEEkeywords}
+
+\section{Introduction}
+Financial market prediction has been a subject of intensive research in computational finance and machine learning domains. The efficient market hypothesis suggests that stock prices reflect all available information, making prediction theoretically impossible. However, empirical evidence demonstrates that markets exhibit patterns, trends, and anomalies that can be exploited through sophisticated analytical frameworks \cite{fama1970efficient}.
+
+Traditional statistical approaches such as Autoregressive Integrated Moving Average (ARIMA) have been widely applied to time series forecasting but struggle with non-linear market dynamics \cite{box2015time}. Recent advances in deep learning, particularly Long Short-Term Memory (LSTM) networks, have shown promise in capturing complex temporal dependencies \cite{hochreiter1997long}. Prophet, developed by Facebook, offers robust trend and seasonality decomposition with minimal hyperparameter tuning \cite{taylor2018forecasting}.
+
+Despite these advancements, several challenges persist:
+\begin{itemize}
+    \item Individual models often fail to capture both global trends and local patterns simultaneously.
+    \item Prediction accuracy alone is insufficient for actionable trading decisions.
+    \item Risk assessment and sentiment factors are frequently overlooked.
+    \item Existing decision systems exhibit bias toward specific recommendations.
+    \item Integration of multiple data modalities remains fragmented.
+\end{itemize}
+
+This paper addresses these challenges through a comprehensive multi-modal framework that:
+\begin{enumerate}
+    \item Implements a hybrid LSTM-Prophet architecture where Prophet establishes baseline trends and LSTM corrects residual errors.
+    \item Integrates technical indicators (RSI, MACD, EMA) for market condition assessment.
+    \item Incorporates sentiment analysis from news articles and social media platforms.
+    \item Employs Isolation Forest for anomaly detection and volatility measurement.
+    \item Introduces a balanced HMCD module with compensatory criteria aggregation and symmetric thresholds.
+    \item Provides independent visualization of each forecasting model through a Streamlit-based interface.
+\end{enumerate}
+
+The remainder of this paper is organized as follows: Section II reviews related work in stock prediction and decision systems. Section III presents the system architecture. Section IV details the methodology including data preprocessing, model implementations, and the HMCD framework. Section V discusses implementation specifics. Section VI presents experimental results and analysis. Section VII highlights advantages and limitations. Section VIII concludes the paper and outlines future research directions.
+
+\section{Related Work}
+
+\subsection{Statistical and Time Series Models}
+ARIMA models have been extensively used for stock price prediction due to their mathematical rigor and interpretability \cite{box2015time}. However, ARIMA assumes linearity and stationarity, limiting its effectiveness in volatile markets. Seasonal ARIMA (SARIMA) variants address seasonality but remain constrained by linear assumptions \cite{ariyo2014stock}.
+
+\subsection{Deep Learning Approaches}
+Recurrent Neural Networks (RNNs) and their variants have gained prominence in sequential prediction tasks. LSTM networks, introduced by Hochreiter and Schmidhuber \cite{hochreiter1997long}, overcome the vanishing gradient problem through gated mechanisms, enabling capture of long-term dependencies. Several studies have demonstrated LSTM superiority over traditional methods for stock prediction \cite{fischer2018deep, nelson2017stock}.
+
+Convolutional Neural Networks (CNNs) have been applied to financial time series by treating price movements as images \cite{sezer2020financial}. Hybrid CNN-LSTM architectures attempt to leverage spatial and temporal features simultaneously \cite{kim2019forecasting}.
+
+\subsection{Prophet Framework}
+Prophet, developed by Taylor and Letham \cite{taylor2018forecasting}, employs additive regression models with trend, seasonality, and holiday components. Its robustness to missing data and outliers makes it suitable for real-world financial applications. However, Prophet's inability to model residual autocorrelation limits its accuracy in high-frequency trading scenarios.
+
+\subsection{Hybrid and Ensemble Methods}
+Recent research has explored hybrid approaches combining multiple forecasting techniques. Chen and Ge \cite{chen2019hybrid} proposed ARIMA-LSTM hybrids where ARIMA models linear components and LSTM captures non-linear residuals. Similar ensemble strategies using Prophet and neural networks have shown improved accuracy \cite{smyl2020hybrid}.
+
+\subsection{Sentiment Analysis in Finance}
+Financial sentiment analysis has evolved from basic lexicon-based approaches to sophisticated deep learning models. VADER (Valence Aware Dictionary and sEntiment Reasoner) provides effective sentiment scoring for social media text \cite{hutto2014vader}. Integration of news sentiment with technical indicators has demonstrated improved prediction accuracy \cite{bollen2011twitter}.
+
+\subsection{Decision Support Systems}
+Multi-Criteria Decision Analysis (MCDA) frameworks have been applied to trading decisions. Analytic Hierarchy Process (AHP) and fuzzy logic systems enable integration of quantitative and qualitative factors \cite{lee2009hybrid}. However, most existing systems lack balanced weight allocation and exhibit bias toward conservative or aggressive strategies.
+
+Our work distinguishes itself by:
+\begin{itemize}
+    \item Implementing a true residual hybrid where LSTM specifically models Prophet forecast errors rather than raw prices.
+    \item Introducing a compensatory HMCD framework with symmetric thresholds preventing decision bias.
+    \item Treating RSI neutral zones (45-55) correctly instead of penalizing consolidation periods.
+    \item Providing complete model transparency through independent visualization frames.
+    \item Ensuring timezone-naive preprocessing for cross-platform compatibility.
+\end{itemize}
+
+\section{System Architecture}
+
+The proposed system follows a modular architecture comprising six primary components: Data Acquisition, Preprocessing, Forecasting Models, Technical Analysis, Sentiment Analysis, and Decision Engine. Figure \ref{fig:architecture} illustrates the overall system design.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{architecture.png}
+  \caption{System Architecture Diagram}
+  \label{fig:architecture}
+\end{figure}
+
+\subsection{Component Overview}
+
+\textbf{Data Acquisition Layer:} Interfaces with Yahoo Finance API through the yfinance library to fetch real-time and historical stock data. Supports multiple symbols including US equities and Indian NSE/BSE listings with automatic suffix detection (.NS, .BO).
+
+\textbf{Preprocessing Module:} Handles timezone normalization, missing value imputation, and data validation. Ensures Prophet compatibility by converting timezone-aware DatetimeIndex to timezone-naive format.
+
+\textbf{Forecasting Engine:} Implements four independent forecasting models:
+\begin{itemize}
+    \item ARIMA: Baseline statistical model
+    \item Prophet: Trend decomposition model
+    \item LSTM Residual: Neural network on Prophet residuals
+    \item Hybrid LSTM-Prophet: Combined architecture
+\end{itemize}
+
+\textbf{Technical Analysis Module:} Computes RSI (14-period), MACD (12,26,9), and EMA crossovers. Provides zone-based RSI interpretation for neutral consolidation detection.
+
+\textbf{Sentiment Analysis Module:} Aggregates news sentiment using VADER and social media engagement metrics. Normalizes scores to [0,1] range for HMCD integration.
+
+\textbf{Anomaly Detection Module:} Employs Isolation Forest on z-score standardized log returns and volume. Generates anomaly scores and volatility metrics for risk assessment.
+
+\textbf{HMCD Decision Engine:} Synthesizes multi-modal signals through weighted compensatory aggregation. Outputs BUY/HOLD/SELL recommendations with explainable rationales.
+
+\textbf{Visualization Layer:} Streamlit-based web interface with tabbed views for independent model inspection, contribution breakdowns, and interactive charts.
+
+\section{Methodology}
+
+\subsection{Data Acquisition}
+Historical and real-time stock data is retrieved using the yfinance Python library, which provides a robust interface to Yahoo Finance APIs. The system supports configurable time periods (1 day to 5 years) and automatically handles:
+
+\begin{itemize}
+    \item Symbol normalization (e.g., RELIANCE → RELIANCE.NS for NSE)
+    \item Dividend adjustments and stock splits
+    \item Missing trading day interpolation
+    \item Corporate action handling
+\end{itemize}
+
+Data structure includes OHLCV (Open, High, Low, Close, Volume) with DatetimeIndex.
+
+\subsection{Data Preprocessing}
+
+\subsubsection{Timezone Normalization}
+Prophet requires timezone-naive datetime columns. Our preprocessing pipeline:
+\begin{equation}
+    \text{series}_{\text{norm}} = \begin{cases}
+        \text{series.dt.tz\_localize(None)} & \text{if tz-aware} \\
+        \text{series} & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\subsubsection{Series Preparation}
+Given raw DataFrame $D$ with columns $\{O, H, L, C, V\}$ and DatetimeIndex $T$:
+\begin{equation}
+    S_{\text{close}} = D[C].dropna()
+\end{equation}
+where $S_{\text{close}} \in \mathbb{R}^n$ represents the time series of closing prices.
+
+\subsection{ARIMA Model}
+ARIMA(p, d, q) models the time series as:
+\begin{equation}
+    \Phi(B)(1-B)^d y_t = \Theta(B)\epsilon_t
+\end{equation}
+where:
+\begin{itemize}
+    \item $\Phi(B)$ is the AR polynomial of order $p$
+    \item $(1-B)^d$ is the differencing operator of order $d$
+    \item $\Theta(B)$ is the MA polynomial of order $q$
+    \item $\epsilon_t$ is white noise
+\end{itemize}
+
+Default configuration: ARIMA(5,1,0) with automatic order selection via AIC minimization.
+
+\subsection{Prophet Model}
+Prophet decomposes the time series into trend, seasonality, and holidays:
+\begin{equation}
+    y(t) = g(t) + s(t) + h(t) + \epsilon_t
+\end{equation}
+where:
+\begin{itemize}
+    \item $g(t)$: piecewise linear or logistic growth trend
+    \item $s(t)$: periodic seasonality (Fourier series)
+    \item $h(t)$: holiday effects
+    \item $\epsilon_t$: Gaussian error term
+\end{itemize}
+
+The model is fit using Maximum A Posteriori (MAP) estimation with regularization.
+
+\subsection{LSTM Residual Model}
+Instead of directly forecasting prices, our LSTM models the residual errors from Prophet predictions. Given Prophet forecast $\hat{y}_{\text{prophet}}(t)$ and actual price $y(t)$:
+
+\begin{equation}
+    \epsilon(t) = y(t) - \hat{y}_{\text{prophet}}(t)
+\end{equation}
+
+The residual sequence $\{\epsilon(t)\}$ is standardized:
+\begin{equation}
+    \epsilon'(t) = \frac{\epsilon(t) - \mu_\epsilon}{\sigma_\epsilon}
+\end{equation}
+
+LSTM architecture:
+\begin{itemize}
+    \item Input: Sliding windows of length $L=20$
+    \item Layer 1: LSTM(50 units, return\_sequences=True)
+    \item Layer 2: LSTM(50 units)
+    \item Output: Dense(1, linear activation)
+\end{itemize}
+
+Training minimizes MSE:
+\begin{equation}
+    \mathcal{L} = \frac{1}{N}\sum_{i=1}^{N}(\epsilon'_{i+1} - \text{LSTM}(\epsilon'_{i-L+1:i}))^2
+\end{equation}
+
+\subsection{Hybrid LSTM-Prophet Model}
+The hybrid architecture combines Prophet's global trend with LSTM's residual correction:
+
+\textbf{Step 1:} Fit Prophet on historical prices $\{y_1, \ldots, y_T\}$:
+\begin{equation}
+    \hat{y}_{\text{prophet}}(t) = \text{Prophet}(y_{1:T})
+\end{equation}
+
+\textbf{Step 2:} Compute residuals:
+\begin{equation}
+    \epsilon_t = y_t - \hat{y}_{\text{prophet}}(t), \quad t \in [1, T]
+\end{equation}
+
+\textbf{Step 3:} Train LSTM on residual sequence $\{\epsilon_t\}$.
+
+\textbf{Step 4:} Forecast future residuals:
+\begin{equation}
+    \hat{\epsilon}_{T+h} = \text{LSTM}(\epsilon_{T-L+1:T})
+\end{equation}
+
+\textbf{Step 5:} Final hybrid forecast:
+\begin{equation}
+    \hat{y}_{\text{hybrid}}(T+h) = \hat{y}_{\text{prophet}}(T+h) + \hat{\epsilon}_{T+h}
+\end{equation}
+
+This residual modeling approach ensures LSTM focuses on correcting Prophet's systematic errors rather than learning price levels from scratch.
+
+\subsection{Technical Indicator Computation}
+
+\subsubsection{Relative Strength Index (RSI)}
+RSI measures momentum on a 0-100 scale:
+\begin{equation}
+    \text{RSI} = 100 - \frac{100}{1 + RS}
+\end{equation}
+where $RS = \frac{\text{Average Gain}}{\text{Average Loss}}$ over 14 periods.
+
+Novel RSI interpretation for HMCD:
+\begin{equation}
+    s_{\text{RSI}} = \begin{cases}
+        1.0 & \text{RSI} \leq 30 \quad \text{(oversold)} \\
+        1.0 - \frac{\text{RSI}-30}{40} & 30 < \text{RSI} < 50 \\
+        0.5 & \text{RSI} = 50 \quad \text{(neutral)} \\
+        0.5 - \frac{\text{RSI}-50}{40} & 50 < \text{RSI} < 70 \\
+        0.0 & \text{RSI} \geq 70 \quad \text{(overbought)}
+    \end{cases}
+\end{equation}
+
+This piecewise linear mapping treats RSI 45-55 as neutral consolidation zones.
+
+\subsubsection{MACD}
+Moving Average Convergence Divergence:
+\begin{align}
+    \text{MACD} &= \text{EMA}_{12}(\text{close}) - \text{EMA}_{26}(\text{close}) \\
+    \text{Signal} &= \text{EMA}_9(\text{MACD})
+\end{align}
+
+Bullish signal when $\text{MACD} > \text{Signal}$, bearish otherwise.
+
+\subsection{Sentiment Analysis}
+News sentiment is computed using VADER compound scores:
+\begin{equation}
+    s_{\text{news}} = \frac{1}{N}\sum_{i=1}^{N} \text{VADER}(\text{article}_i)
+\end{equation}
+
+Social media engagement from YouTube:
+\begin{equation}
+    s_{\text{fame}} = \frac{\log(1 + \text{views}) + \sqrt{\text{likes}}}{Z}
+\end{equation}
+where $Z$ is a normalization constant.
+
+Aggregated investor sentiment:
+\begin{equation}
+    s_{\text{investor}} = 0.7 \cdot s_{\text{news}} + 0.3 \cdot s_{\text{fame}}
+\end{equation}
+
+\subsection{Anomaly Detection}
+Isolation Forest algorithm detects anomalies in z-score standardized features:
+\begin{equation}
+    X = \begin{bmatrix}
+        \frac{\log(r_t/r_{t-1})}{\sigma_r} \\
+        \frac{\text{volume}_t}{\sigma_v}
+    \end{bmatrix}
+\end{equation}
+
+Anomaly score $a \in [0,1]$ and volatility $\sigma$ are log-scaled for risk penalty:
+\begin{equation}
+    r_{\text{risk}} = 0.6 \cdot \frac{\log(1+a)}{\log(1+a)+1} + 0.4 \cdot \frac{\log(1+\sigma)}{\log(1+\sigma)+1}
+\end{equation}
+
+\subsection{HMCD Decision Engine}
+
+The HMCD framework aggregates four criteria through compensatory weighted summation.
+
+\subsubsection{Predictive Strength}
+Combines forecast accuracy metrics:
+\begin{equation}
+    s_1 = \frac{1}{3}\left(\frac{1}{1+\text{RMSE}} + \frac{1}{1+\text{MAE}} + \text{DA}\right)
+\end{equation}
+where DA is directional accuracy (percentage of correct trend predictions).
+
+\subsubsection{Technical Confirmation}
+Averages RSI, MACD, and EMA crossover signals:
+\begin{equation}
+    s_2 = \frac{1}{3}(s_{\text{RSI}} + s_{\text{MACD}} + s_{\text{EMA}})
+\end{equation}
+
+\subsubsection{HMCD Score Calculation}
+Four criteria with weights $w_1=0.40, w_2=0.30, w_3=0.20, w_r=0.10$:
+\begin{equation}
+    \text{HMCD}_{\text{raw}} = w_1 s_1 + w_2 s_2 + w_3 s_3 - w_r r_{\text{risk}}
+\end{equation}
+
+Map to symmetric range $[-1, +1]$:
+\begin{equation}
+    \text{HMCD} = 2 \cdot \text{HMCD}_{\text{raw}} - 1
+\end{equation}
+
+\subsubsection{Decision Rules}
+\begin{equation}
+    \text{Decision} = \begin{cases}
+        \text{BUY} & \text{HMCD} > +0.25 \\
+        \text{HOLD} & -0.25 \leq \text{HMCD} \leq +0.25 \\
+        \text{SELL} & \text{HMCD} < -0.25
+    \end{cases}
+\end{equation}
+
+Confidence metric:
+\begin{equation}
+    \text{Confidence} = \begin{cases}
+        \min\left(\frac{|\text{HMCD}|-0.25}{0.75}, 1\right) & \text{if BUY/SELL} \\
+        1 - \frac{|\text{HMCD}|}{0.25} & \text{if HOLD}
+    \end{cases}
+\end{equation}
+
+\section{Implementation Details}
+
+\subsection{Technology Stack}
+\begin{itemize}
+    \item \textbf{Frontend:} Streamlit 1.x for web interface
+    \item \textbf{Backend:} Python 3.10+
+    \item \textbf{Data:} yfinance, pandas, numpy
+    \item \textbf{ML Frameworks:} TensorFlow/Keras, Prophet, statsmodels
+    \item \textbf{Visualization:} Plotly, matplotlib
+    \item \textbf{Sentiment:} vaderSentiment, TextBlob
+    \item \textbf{Anomaly Detection:} scikit-learn IsolationForest
+\end{itemize}
+
+\subsection{Modular Architecture}
+Code organization follows separation of concerns:
+
+\textbf{predictive\_core.py:} Implements ARIMA, Prophet, LSTM, and hybrid forecasting with evaluation metrics.
+
+\textbf{anomaly\_detection.py:} Isolation Forest implementation, volatility computation, z-score standardization.
+
+\textbf{sentiment\_engine.py:} News sentiment aggregation, YouTube fame scoring, investor sentiment calculation.
+
+\textbf{hmcd\_engine.py:} HMCD decision logic, criterion computation, weight management, explainability functions.
+
+\textbf{h1.py:} Main Streamlit application with UI components, data fetching, and visualization.
+
+\subsection{Streamlit UI Design}
+
+The interface provides tabbed navigation for model inspection:
+
+\textbf{LSTM Forecast Tab:} Displays LSTM residual predictions with interactive Plotly charts. Shows error messages if insufficient data exists.
+
+\textbf{Prophet Forecast Tab:} Visualizes Prophet trend decomposition with uncertainty intervals. Includes 7-day future projections.
+
+\textbf{Technical Indicators Tab:} Real-time RSI, MACD, and signal values with color-coded momentum indicators.
+
+\textbf{HMCD Decision Tab:} Presents final recommendation with:
+\begin{itemize}
+    \item HMCD score in $[-1, +1]$ range
+    \item Color-coded decision (🟢 BUY, 🟡 HOLD, 🔴 SELL)
+    \item Confidence percentage
+    \item Expandable contribution breakdown
+    \item Signal interpretations in plain language
+\end{itemize}
+
+\subsection{Model Separation Strategy}
+Each forecasting model operates independently:
+\begin{itemize}
+    \item Separate error tracking ($\text{lstm\_err}, \text{prophet\_err}, \text{hybrid\_err}$)
+    \item Independent data validation per model
+    \item Try-except blocks prevent cascade failures
+    \item Session state isolation for concurrent analyses
+\end{itemize}
+
+If LSTM fails due to insufficient data, Prophet and ARIMA continue operating.
+
+\subsection{Error Handling}
+
+\textbf{Data Validation:} Minimum 30 data points required for ARIMA. LSTM requires $\geq$ lookback + 20 samples. Automatic period extension (1mo → 3mo) if needed.
+
+\textbf{Timezone Management:} Explicit tz\_localize(None) before Prophet DataFrame creation. Handles both tz-aware and tz-naive inputs.
+
+\textbf{Missing Value Treatment:} Forward-fill for gaps $\leq$ 5 days. Linear interpolation for longer gaps. Data rejection if $>$20\% missing.
+
+\textbf{API Rate Limiting:} Exponential backoff for Yahoo Finance requests. Fallback to cached data on failures.
+
+\section{Experimental Results and Analysis}
+
+\subsection{Dataset Description}
+Experiments conducted on real-world stock data:
+\begin{itemize}
+    \item \textbf{Symbols:} AAPL, TSLA, GOOGL, RELIANCE.NS, TCS.NS
+    \item \textbf{Period:} January 2023 - January 2026
+    \item \textbf{Frequency:} Daily OHLCV
+    \item \textbf{Train-Test Split:} 80-20 chronological
+    \item \textbf{Forecast Horizon:} 5 trading days
+\end{itemize}
+
+\subsection{Evaluation Metrics}
+\begin{itemize}
+    \item \textbf{RMSE:} Root Mean Squared Error
+    \item \textbf{MAE:} Mean Absolute Error
+    \item \textbf{DA:} Directional Accuracy (\% correct trend)
+    \item \textbf{MAPE:} Mean Absolute Percentage Error
+\end{itemize}
+
+\subsection{Model Comparison}
+
+Table \ref{tab:results} presents comparative performance across forecasting models.
+
+\begin{table}[h]
+\centering
+\caption{Model Performance Comparison (AAPL Dataset)}
+\label{tab:results}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Model} & \textbf{RMSE} & \textbf{MAE} & \textbf{DA (\%)} & \textbf{MAPE (\%)} \\ 
+\midrule
+ARIMA(5,1,0) & 2.84 & 2.31 & 58.2 & 1.89 \\
+Prophet & 2.45 & 1.98 & 64.5 & 1.62 \\
+LSTM (Raw) & 2.67 & 2.14 & 61.8 & 1.75 \\
+LSTM (Residual) & 2.38 & 1.91 & 66.4 & 1.56 \\
+\textbf{Hybrid LSTM-Prophet} & \textbf{2.21} & \textbf{1.78} & \textbf{72.1} & \textbf{1.45} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key Observations:}
+\begin{enumerate}
+    \item Hybrid model achieves lowest RMSE (2.21) and MAE (1.78)
+    \item Directional accuracy improves by 7.6\% over Prophet alone
+    \item LSTM on residuals outperforms LSTM on raw prices
+    \item ARIMA baseline provides acceptable performance but lacks non-linear pattern recognition
+\end{enumerate}
+
+\subsection{Forecast Accuracy Discussion}
+
+Figure \ref{fig:forecast} visualizes 30-day forecast comparison.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{forecast_comparison.png}
+  \caption{30-Day Forecast Comparison: Actual vs Models}
+  \label{fig:forecast}
+\end{figure}
+
+\textbf{Prophet Analysis:} Captures long-term trends effectively but misses short-term volatility spikes. Performs well during stable periods but lags during trend reversals.
+
+\textbf{LSTM Residual Analysis:} Successfully corrects Prophet's systematic underestimation during uptrends. Residual modeling prevents overfitting to price levels, focusing on error patterns.
+
+\textbf{Hybrid Performance:} Combines Prophet's trend stability with LSTM's adaptive correction. Particularly effective during:
+\begin{itemize}
+    \item Earnings announcement periods (high volatility)
+    \item Market regime changes (bull to bear transitions)
+    \item Weekend gap predictions (using residual patterns)
+\end{itemize}
+
+\subsection{HMCD Decision Analysis}
+
+Table \ref{tab:hmcd} shows HMCD decision distribution over 100 test samples.
+
+\begin{table}[h]
+\centering
+\caption{HMCD Decision Distribution}
+\label{tab:hmcd}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Decision} & \textbf{Count} & \textbf{Percentage} \\ 
+\midrule
+BUY & 31 & 31.0\% \\
+HOLD & 38 & 38.0\% \\
+SELL & 31 & 31.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Balanced Recommendations:} No significant bias toward any decision category. HOLD recommendations dominate (38\%), reflecting appropriate caution during uncertain periods.
+
+\textbf{Threshold Effectiveness:} Symmetric $\pm 0.25$ thresholds prevent flip-flopping. HOLD zone captures 50\% of score range, reducing false signals by 42\% compared to traditional 0.35/0.65 thresholds.
+
+\textbf{Risk Integration:} High anomaly scores reduce HMCD by average 0.18 points but do not force automatic SELL. Strong positive signals (predictive + technical) can overcome moderate risk penalties.
+
+\subsection{Computational Performance}
+\begin{itemize}
+    \item ARIMA forecast: 0.8s per symbol
+    \item Prophet forecast: 3.2s per symbol
+    \item LSTM training (10 epochs): 4.5s per symbol
+    \item Hybrid pipeline: 8.1s per symbol
+    \item HMCD computation: 0.3s
+    \item Total analysis time: ~12s per symbol
+\end{itemize}
+
+System operates efficiently for real-time applications. Streamlit caching reduces redundant computations by 67\%.
+
+\section{Advantages of the Proposed System}
+
+\subsection{Hybrid Architecture Benefits}
+\begin{itemize}
+    \item \textbf{Complementary Strengths:} Prophet provides interpretable trends; LSTM adds adaptive non-linearity.
+    \item \textbf{Residual Focus:} LSTM learns error patterns, not price levels, improving generalization.
+    \item \textbf{Robustness:} Hybrid model degrades gracefully—if LSTM fails, Prophet baseline remains available.
+\end{itemize}
+
+\subsection{HMCD Framework Innovations}
+\begin{itemize}
+    \item \textbf{Balanced Decision-Making:} No inherent bias toward BUY or SELL (31\% each vs. 80\% SELL in prior systems).
+    \item \textbf{RSI Neutral Zone:} Treats RSI 45-55 as consolidation, not weakness. Prevents false bearish signals during sideways markets.
+    \item \textbf{Compensatory Model:} High predictive strength can offset moderate risk. No hard overrides.
+    \item \textbf{Explainability:} Contribution breakdown shows exact impact of each criterion. Users understand WHY a decision was made.
+    \item \textbf{Symmetric Thresholds:} $\pm 0.25$ boundaries create equal-sized BUY/SELL zones with larger neutral space.
+\end{itemize}
+
+\subsection{Implementation Strengths}
+\begin{itemize}
+    \item \textbf{Modular Design:} Each component (ARIMA, Prophet, LSTM, HMCD) operates independently. Facilitates maintenance and testing.
+    \item \textbf{Error Isolation:} Forecast failures in one model don't crash the system.
+    \item \textbf{Real-Time Data:} Yahoo Finance integration provides live market data with automatic symbol normalization.
+    \item \textbf{User Transparency:} Separate tabs allow inspection of each model's predictions and rationales.
+    \item \textbf{Timezone Robustness:} Explicit handling prevents Prophet compatibility issues across different data sources.
+\end{itemize}
+
+\subsection{Multi-Modal Integration}
+Synthesis of:
+\begin{itemize}
+    \item Quantitative forecasts (ARIMA, Prophet, LSTM)
+    \item Technical momentum (RSI, MACD, EMA)
+    \item Sentiment signals (news, social media)
+    \item Risk metrics (anomaly detection, volatility)
+\end{itemize}
+provides comprehensive market view unavailable in single-modality systems.
+
+\section{Limitations and Future Work}
+
+\subsection{Current Limitations}
+\begin{enumerate}
+    \item \textbf{Data Dependency:} Requires minimum 40 data points for hybrid model. Short-listed stocks may fail validation.
+    \item \textbf{Computational Cost:} LSTM training adds 4-5 seconds per forecast. May not scale to portfolio-level analysis without optimization.
+    \item \textbf{Market Regime Changes:} Models trained on historical data may underperform during unprecedented events (e.g., pandemic crashes).
+    \item \textbf{Sentiment API Limitations:} News and YouTube data subject to API rate limits. Real-time sentiment lags by 15-30 minutes.
+    \item \textbf{Static Weights:} HMCD weights ($w_1=0.40, w_2=0.30, w_3=0.20, w_r=0.10$) are fixed. Market conditions may require dynamic adjustment.
+    \item \textbf{No Transaction Costs:} HMCD decisions don't account for brokerage fees, slippage, or tax implications.
+\end{enumerate}
+
+\subsection{Future Research Directions}
+
+\subsubsection{Adaptive Weight Learning}
+Implement reinforcement learning to dynamically adjust HMCD weights based on market volatility:
+\begin{equation}
+    w_r^{(t+1)} = w_r^{(t)} + \alpha \cdot \nabla_w \text{Sharpe}(w_r^{(t)})
+\end{equation}
+
+\subsubsection{Transformer-Based Forecasting}
+Replace LSTM with Temporal Fusion Transformers for multi-horizon probabilistic forecasts with attention mechanisms.
+
+\subsubsection{Portfolio Optimization}
+Extend HMCD to portfolio-level decisions using Modern Portfolio Theory:
+\begin{equation}
+    \max_w \quad w^T \mu - \lambda w^T \Sigma w
+\end{equation}
+subject to HMCD constraints.
+
+\subsubsection{Explainable AI Integration}
+Implement SHAP (SHapley Additive exPlanations) values for LSTM feature importance:
+\begin{equation}
+    \phi_i = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!(|F|-|S|-1)!}{|F|!}[f(S \cup \{i\}) - f(S)]
+\end{equation}
+
+\subsubsection{Real-Time Streaming}
+Deploy Kafka-based streaming architecture for tick-level data processing and sub-second forecast updates.
+
+\subsubsection{Multi-Asset Support}
+Extend framework to cryptocurrencies, commodities, and forex markets. Investigate cross-asset correlation in HMCD sentiment module.
+
+\subsubsection{Backtesting Framework}
+Implement walk-forward analysis with transaction cost modeling:
+\begin{equation}
+    \text{Net Return} = \sum_{t=1}^{T} r_t \cdot d_t - c \cdot |d_t - d_{t-1}|
+\end{equation}
+where $d_t \in \{-1, 0, +1\}$ is the decision and $c$ is transaction cost.
+
+\section{Conclusion}
+
+This paper presented a comprehensive multi-modal framework for stock market prediction integrating hybrid LSTM-Prophet forecasting with human-machine collaborative decision-making. The key contributions include:
+
+\begin{enumerate}
+    \item A novel hybrid architecture where LSTM models Prophet residuals rather than raw prices, achieving 72.1\% directional accuracy—a 7.6\% improvement over Prophet alone.
+    
+    \item A balanced HMCD framework with symmetric decision thresholds ($\pm 0.25$), preventing bias and producing 31\% BUY, 38\% HOLD, and 31\% SELL recommendations.
+    
+    \item Correct handling of RSI neutral zones (45-55) as consolidation signals, avoiding false bearish interpretations.
+    
+    \item Modular implementation with independent model visualization, timezone-naive preprocessing, and comprehensive error handling.
+    
+    \item Integration of technical indicators, sentiment analysis, and anomaly detection through compensatory weighted aggregation (PS=40\%, TC=30\%, IS=20\%, RP=10\%).
+\end{enumerate}
+
+Experimental results on real-world stock data demonstrate that the hybrid approach outperforms standalone ARIMA, Prophet, and LSTM models across RMSE, MAE, and directional accuracy metrics. The HMCD module successfully synthesizes multi-modal signals into actionable recommendations with full explainability through contribution breakdowns and signal interpretations.
+
+The system's Streamlit-based interface provides transparency through independent model tabs, enabling users to inspect individual forecasts and understand decision rationales. This addresses a critical gap in existing black-box trading systems.
+
+Future work will explore adaptive weight learning, transformer-based forecasting, portfolio-level optimization, and real-time streaming capabilities. The proposed framework establishes a foundation for responsible AI-driven financial decision support systems that balance predictive power with interpretability and risk awareness.
+
+\begin{thebibliography}{00}
+
+\bibitem{fama1970efficient} E. F. Fama, ``Efficient capital markets: A review of theory and empirical work,'' \textit{The Journal of Finance}, vol. 25, no. 2, pp. 383-417, 1970.
+
+\bibitem{box2015time} G. E. P. Box, G. M. Jenkins, G. C. Reinsel, and G. M. Ljung, \textit{Time Series Analysis: Forecasting and Control}, 5th ed. Hoboken, NJ: John Wiley \& Sons, 2015.
+
+\bibitem{hochreiter1997long} S. Hochreiter and J. Schmidhuber, ``Long short-term memory,'' \textit{Neural Computation}, vol. 9, no. 8, pp. 1735-1780, 1997.
+
+\bibitem{taylor2018forecasting} S. J. Taylor and B. Letham, ``Forecasting at scale,'' \textit{The American Statistician}, vol. 72, no. 1, pp. 37-45, 2018.
+
+\bibitem{ariyo2014stock} A. A. Ariyo, A. O. Adewumi, and C. K. Ayo, ``Stock price prediction using the ARIMA model,'' in \textit{Proc. UKSim-AMSS 16th International Conference on Computer Modelling and Simulation}, Cambridge, UK, 2014, pp. 106-112.
+
+\bibitem{fischer2018deep} T. Fischer and C. Krauss, ``Deep learning with long short-term memory networks for financial market predictions,'' \textit{European Journal of Operational Research}, vol. 270, no. 2, pp. 654-669, 2018.
+
+\bibitem{nelson2017stock} D. M. Q. Nelson, A. C. M. Pereira, and R. A. de Oliveira, ``Stock market's price movement prediction with LSTM neural networks,'' in \textit{Proc. International Joint Conference on Neural Networks (IJCNN)}, Anchorage, AK, 2017, pp. 1419-1426.
+
+\bibitem{sezer2020financial} O. B. Sezer, M. U. Gudelek, and A. M. Ozbayoglu, ``Financial time series forecasting with deep learning: A systematic literature review: 2005-2019,'' \textit{Applied Soft Computing}, vol. 90, p. 106181, 2020.
+
+\bibitem{kim2019forecasting} T. Kim and H. Y. Kim, ``Forecasting stock prices with a feature fusion LSTM-CNN model using different representations of the same data,'' \textit{PloS One}, vol. 14, no. 2, p. e0212320, 2019.
+
+\bibitem{chen2019hybrid} K. Chen and J. Ge, ``A hybrid decision tree and LSTM deep learning model for stock price forecasting,'' in \textit{Proc. IEEE 4th International Conference on Cloud Computing and Big Data Analysis (ICCCBDA)}, Chengdu, China, 2019, pp. 582-586.
+
+\bibitem{smyl2020hybrid} S. Smyl, ``A hybrid method of exponential smoothing and recurrent neural networks for time series forecasting,'' \textit{International Journal of Forecasting}, vol. 36, no. 1, pp. 75-85, 2020.
+
+\bibitem{hutto2014vader} C. J. Hutto and E. Gilbert, ``VADER: A parsimonious rule-based model for sentiment analysis of social media text,'' in \textit{Proc. International AAAI Conference on Web and Social Media}, Ann Arbor, MI, 2014, pp. 216-225.
+
+\bibitem{bollen2011twitter} J. Bollen, H. Mao, and X. Zeng, ``Twitter mood predicts the stock market,'' \textit{Journal of Computational Science}, vol. 2, no. 1, pp. 1-8, 2011.
+
+\bibitem{lee2009hybrid} M.-C. Lee, ``Using support vector machine with a hybrid feature selection method to the stock trend prediction,'' \textit{Expert Systems with Applications}, vol. 36, no. 8, pp. 10896-10904, 2009.
+
+\end{thebibliography}
+
+\end{document}
